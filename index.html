@@ -1,0 +1,971 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Commonplace Book</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Lora:ital,wght@0,400;0,500;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --parchment: #ECE1C5;
+    --parchment-deep: #E1D3AC;
+    --parchment-card: #F6EFDC;
+    --ink: #221C14;
+    --ink-soft: #5C5240;
+    --brass: #93702F;
+    --brass-soft: #B79A5E;
+    --rubric: #8A3324;
+    --rule: rgba(34, 28, 20, 0.16);
+    --shadow: rgba(34, 28, 20, 0.12);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--parchment);
+    color: var(--ink);
+    font-family: 'Lora', serif;
+    min-height: 100vh;
+    background-image:
+      radial-gradient(circle at 20% 30%, rgba(34,28,20,0.025) 0, transparent 45%),
+      radial-gradient(circle at 80% 70%, rgba(34,28,20,0.03) 0, transparent 50%);
+  }
+
+  button {
+    font-family: 'DM Mono', monospace;
+    cursor: pointer;
+    border: none;
+    background: none;
+  }
+
+  input, textarea {
+    font-family: 'Lora', serif;
+    color: var(--ink);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--rubric);
+    outline-offset: 2px;
+  }
+
+  .app {
+    display: flex;
+    min-height: 100vh;
+    align-items: flex-start;
+  }
+
+  /* ---------- Sidebar ---------- */
+
+  .sidebar {
+    width: 260px;
+    flex-shrink: 0;
+    min-height: 100vh;
+    background: var(--parchment-deep);
+    border-right: 2px solid var(--brass);
+    padding: 32px 22px;
+    position: sticky;
+    top: 0;
+  }
+
+  .brand {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 600;
+    font-size: 34px;
+    letter-spacing: 0.02em;
+    margin: 0;
+  }
+
+  .epigraph {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 15px;
+    color: var(--ink-soft);
+    margin: 4px 0 28px;
+  }
+
+  .heading-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 24px;
+  }
+
+  .heading-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 8px;
+    border-radius: 3px;
+    background: transparent;
+    border-left: 3px solid transparent;
+    text-align: left;
+    width: 100%;
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    color: var(--ink);
+    transition: background 0.15s ease;
+  }
+
+  .heading-row:hover { background: rgba(34,28,20,0.05); }
+
+  .heading-row.active {
+    border-left-color: var(--rubric);
+    background: rgba(138,51,36,0.08);
+    font-weight: 500;
+  }
+
+  .stamp {
+    flex-shrink: 0;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: 1.5px solid var(--brass);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--brass);
+    background: var(--parchment-card);
+  }
+
+  .stamp.filled {
+    background: var(--brass);
+    color: var(--parchment-card);
+  }
+
+  .stamp.small {
+    width: 20px;
+    height: 20px;
+    font-size: 11px;
+  }
+
+  .heading-label {
+    flex-grow: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .heading-count {
+    color: var(--ink-soft);
+    font-size: 11px;
+  }
+
+  .heading-remove {
+    color: var(--ink-soft);
+    font-size: 13px;
+    opacity: 0;
+    padding: 0 2px;
+  }
+
+  .heading-row:hover .heading-remove { opacity: 1; }
+  .heading-remove:hover { color: var(--rubric); }
+
+  .new-heading {
+    display: flex;
+    gap: 6px;
+    border-top: 1px solid var(--rule);
+    padding-top: 16px;
+  }
+
+  .new-heading input {
+    flex-grow: 1;
+    background: var(--parchment-card);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    padding: 7px 9px;
+    font-size: 13px;
+    font-family: 'DM Mono', monospace;
+  }
+
+  .new-heading button {
+    font-size: 12px;
+    color: var(--brass);
+    padding: 0 6px;
+    text-transform: lowercase;
+    letter-spacing: 0.03em;
+  }
+
+  .new-heading button:hover { color: var(--rubric); }
+
+  /* ---------- Main ---------- */
+
+  .main {
+    flex-grow: 1;
+    padding: 32px 44px 60px;
+    max-width: 760px;
+  }
+
+  .config-banner {
+    font-family: 'DM Mono', monospace;
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    background: rgba(147,112,47,0.1);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    padding: 10px 14px;
+    margin-bottom: 20px;
+  }
+
+  .toolbar {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 28px;
+  }
+
+  .search-wrap {
+    flex-grow: 1;
+    border-bottom: 1.5px solid var(--brass-soft);
+  }
+
+  #searchInput {
+    width: 100%;
+    border: none;
+    background: none;
+    padding: 8px 2px;
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    letter-spacing: 0.01em;
+  }
+
+  #searchInput::placeholder { color: var(--ink-soft); }
+
+  .new-entry-btn {
+    background: var(--ink);
+    color: var(--parchment-card);
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    padding: 10px 16px;
+    border-radius: 3px;
+    white-space: nowrap;
+  }
+
+  .new-entry-btn:hover { background: var(--rubric); }
+
+  .sync-status {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--ink-soft);
+    white-space: nowrap;
+  }
+
+  /* ---------- Composer ---------- */
+
+  .composer {
+    background: var(--parchment-card);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    padding: 20px;
+    margin-bottom: 30px;
+    box-shadow: 0 2px 6px var(--shadow);
+  }
+
+  .composer-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 17px;
+    color: var(--ink-soft);
+    margin: 0 0 12px;
+  }
+
+  #composerText {
+    width: 100%;
+    min-height: 220px;
+    resize: vertical;
+    border: 1px solid var(--rule);
+    border-radius: 2px;
+    padding: 12px 16px;
+    font-size: 16px;
+    line-height: 28px;
+    background-image: repeating-linear-gradient(
+      var(--parchment-card) 0px, var(--parchment-card) 27px, var(--rule) 28px
+    );
+  }
+
+  .stamp-picker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 16px 0;
+  }
+
+  .picker-chip {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    border: 1px solid var(--rule);
+    border-radius: 14px;
+    padding: 4px 10px 4px 4px;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    background: var(--parchment);
+    color: var(--ink-soft);
+  }
+
+  .picker-chip.selected {
+    border-color: var(--brass);
+    color: var(--ink);
+    background: rgba(147,112,47,0.12);
+  }
+
+  .picker-empty {
+    font-family: 'DM Mono', monospace;
+    font-size: 12.5px;
+    color: var(--ink-soft);
+  }
+
+  .composer-actions {
+    display: flex;
+    gap: 10px;
+  }
+
+  .composer-actions button {
+    font-size: 12px;
+    letter-spacing: 0.03em;
+    padding: 9px 16px;
+    border-radius: 3px;
+  }
+
+  #saveEntryBtn {
+    background: var(--brass);
+    color: var(--parchment-card);
+  }
+
+  #saveEntryBtn:hover { background: var(--rubric); }
+
+  .ghost {
+    color: var(--ink-soft);
+    border: 1px solid var(--rule);
+  }
+
+  .ghost:hover { color: var(--ink); }
+
+  /* ---------- Entries ---------- */
+
+  .entries {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+  }
+
+  .entry-card {
+    position: relative;
+    background: var(--parchment-card);
+    border: 1px solid var(--rule);
+    border-radius: 2px;
+    padding: 22px 22px 16px;
+    box-shadow: 0 1px 0 var(--rule);
+  }
+
+  .entry-card::before {
+    content: "";
+    position: absolute;
+    top: -6px;
+    left: 0;
+    right: 0;
+    height: 6px;
+    background-image:
+      linear-gradient(135deg, var(--parchment) 50%, transparent 50%),
+      linear-gradient(45deg, var(--parchment) 50%, transparent 50%);
+    background-size: 12px 12px;
+    background-position: 0 0, 6px 0;
+    background-repeat: repeat-x;
+  }
+
+  .entry-content {
+    font-size: 16px;
+    line-height: 1.65;
+    white-space: pre-wrap;
+    margin: 0 0 14px;
+  }
+
+  .entry-content.clamped {
+    max-height: 8.2em;
+    overflow: hidden;
+    -webkit-mask-image: linear-gradient(to bottom, black 70%, transparent 100%);
+    mask-image: linear-gradient(to bottom, black 70%, transparent 100%);
+  }
+
+  .expand-toggle {
+    display: inline-block;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--rubric);
+    margin-bottom: 14px;
+  }
+
+  .expand-toggle:hover { text-decoration: underline; }
+
+  .entry-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    border-top: 1px solid var(--rule);
+    padding-top: 12px;
+    flex-wrap: wrap;
+  }
+
+  .entry-stamps {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .entry-meta {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--ink-soft);
+  }
+
+  .entry-action {
+    color: var(--ink-soft);
+    text-transform: lowercase;
+    letter-spacing: 0.03em;
+  }
+
+  .entry-action:hover { color: var(--rubric); }
+
+  .empty-state {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 18px;
+    color: var(--ink-soft);
+    padding: 40px 4px;
+    text-align: center;
+  }
+
+  @media (max-width: 760px) {
+    .app { flex-direction: column; }
+
+    .sidebar {
+      width: 100%;
+      min-height: auto;
+      position: static;
+      padding: 20px;
+    }
+
+    .heading-list {
+      flex-direction: row;
+      overflow-x: auto;
+      gap: 8px;
+    }
+
+    .heading-row { width: auto; flex-shrink: 0; }
+
+    .main { padding: 24px 18px 50px; max-width: 100%; }
+
+    .toolbar { flex-wrap: wrap; }
+
+    .sync-status { width: 100%; text-align: right; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <aside class="sidebar">
+    <h1 class="brand">Index</h1>
+    <p class="epigraph">a record of things worth keeping</p>
+
+    <nav class="heading-list" id="headingList"></nav>
+
+    <form class="new-heading" id="newHeadingForm">
+      <input type="text" id="newHeadingInput" placeholder="new heading" maxlength="40" />
+      <button type="submit">add</button>
+    </form>
+  </aside>
+
+  <main class="main">
+    <div class="config-banner" id="configBanner" hidden>
+      Add your JSONBin bin ID and API key in the script (look for "TODO") to sync across devices.
+      Until then, entries are saved to this browser only.
+    </div>
+
+    <div class="toolbar">
+      <div class="search-wrap">
+        <input type="text" id="searchInput" placeholder="search entries…" />
+      </div>
+      <button class="new-entry-btn" id="newEntryBtn">+ new entry</button>
+      <span class="sync-status" id="syncStatus"></span>
+    </div>
+
+    <section class="composer" id="composer" hidden>
+      <p class="composer-title" id="composerTitle">New entry</p>
+      <textarea id="composerText" placeholder="Write what's worth keeping…"></textarea>
+      <div class="stamp-picker" id="stampPicker"></div>
+      <div class="composer-actions">
+        <button id="saveEntryBtn">save entry</button>
+        <button id="cancelEntryBtn" class="ghost">cancel</button>
+      </div>
+    </section>
+
+    <section class="entries" id="entries"></section>
+  </main>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  // ---------------------------------------------------------------
+  // TODO: replace these two values with your own JSONBin.io bin ID
+  // and Master/Secret API key to enable cross-device sync.
+  // Until they're set, the app falls back to this browser's
+  // localStorage only.
+  // ---------------------------------------------------------------
+  const BIN_ID = "YOUR_BIN_ID_HERE";
+  const API_KEY = "YOUR_JSONBIN_API_KEY_HERE";
+
+  const CONFIGURED = BIN_ID !== "YOUR_BIN_ID_HERE" && API_KEY !== "YOUR_JSONBIN_API_KEY_HERE";
+  const API_BASE = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
+  const CACHE_KEY = "commonplace-book-cache";
+
+  let state = { sections: [], notes: [] };
+  let activeSection = null;
+  let searchTerm = "";
+  let editingId = null;
+  let pickerSelected = new Set();
+  let expandedIds = new Set();
+
+  // ---------------- elements ----------------
+  const headingListEl = document.getElementById("headingList");
+  const newHeadingForm = document.getElementById("newHeadingForm");
+  const newHeadingInput = document.getElementById("newHeadingInput");
+  const searchInput = document.getElementById("searchInput");
+  const newEntryBtn = document.getElementById("newEntryBtn");
+  const syncStatusEl = document.getElementById("syncStatus");
+  const configBanner = document.getElementById("configBanner");
+
+  const composer = document.getElementById("composer");
+  const composerTitle = document.getElementById("composerTitle");
+  const composerText = document.getElementById("composerText");
+  const stampPicker = document.getElementById("stampPicker");
+  const saveEntryBtn = document.getElementById("saveEntryBtn");
+  const cancelEntryBtn = document.getElementById("cancelEntryBtn");
+
+  const entriesEl = document.getElementById("entries");
+
+  if (!CONFIGURED) configBanner.hidden = false;
+
+  // ---------------- persistence ----------------
+
+  function setSync(text) {
+    syncStatusEl.textContent = text;
+  }
+
+  function cacheLocally() {
+    try {
+      localStorage.setItem(CACHE_KEY, JSON.stringify(state));
+    } catch (e) {
+      // localStorage unavailable; nothing more we can do client-side
+    }
+  }
+
+  function loadLocalCache() {
+    try {
+      const raw = localStorage.getItem(CACHE_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  async function loadData() {
+    if (!CONFIGURED) {
+      const cached = loadLocalCache();
+      state = cached || { sections: [], notes: [] };
+      setSync("local only");
+      renderAll();
+      return;
+    }
+
+    setSync("loading…");
+    try {
+      const res = await fetch(`${API_BASE}/latest`, {
+        headers: { "X-Master-Key": API_KEY }
+      });
+      if (!res.ok) throw new Error("fetch failed");
+      const json = await res.json();
+      state = json.record || { sections: [], notes: [] };
+      cacheLocally();
+      setSync("synced");
+    } catch (e) {
+      const cached = loadLocalCache();
+      if (cached) {
+        state = cached;
+        setSync("offline — showing last saved copy");
+      } else {
+        state = { sections: [], notes: [] };
+        setSync("offline — couldn't reach JSONBin");
+      }
+    }
+    renderAll();
+  }
+
+  async function saveData() {
+    cacheLocally();
+    if (!CONFIGURED) {
+      setSync("saved locally");
+      return;
+    }
+    setSync("saving…");
+    try {
+      const res = await fetch(API_BASE, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Master-Key": API_KEY
+        },
+        body: JSON.stringify(state)
+      });
+      if (!res.ok) throw new Error("save failed");
+      setSync("synced");
+    } catch (e) {
+      setSync("offline — saved locally only");
+    }
+  }
+
+  // ---------------- helpers ----------------
+
+  function generateId() {
+    return "n" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  }
+
+  function formatDate(iso) {
+    const d = new Date(iso);
+    return d.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+  }
+
+  function countForSection(name) {
+    return state.notes.filter((n) => n.tags.includes(name)).length;
+  }
+
+  function filteredNotes() {
+    const term = searchTerm.trim().toLowerCase();
+    return state.notes
+      .filter((n) => !activeSection || n.tags.includes(activeSection))
+      .filter((n) => {
+        if (!term) return true;
+        if (n.content.toLowerCase().includes(term)) return true;
+        return n.tags.some((t) => t.toLowerCase().includes(term));
+      })
+      .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+  }
+
+  // ---------------- rendering: sidebar ----------------
+
+  function renderSidebar() {
+    headingListEl.innerHTML = "";
+
+    const allRow = makeHeadingRow("¶", "All entries", state.notes.length, null);
+    headingListEl.appendChild(allRow);
+
+    state.sections.forEach((section) => {
+      const row = makeHeadingRow(section.charAt(0).toUpperCase(), section, countForSection(section), section);
+      headingListEl.appendChild(row);
+    });
+  }
+
+  function makeHeadingRow(initial, label, count, sectionValue) {
+    const row = document.createElement("button");
+    row.className = "heading-row" + (activeSection === sectionValue ? " active" : "");
+    row.type = "button";
+
+    const stamp = document.createElement("span");
+    stamp.className = "stamp small";
+    stamp.textContent = initial;
+
+    const labelEl = document.createElement("span");
+    labelEl.className = "heading-label";
+    labelEl.textContent = label;
+
+    const countEl = document.createElement("span");
+    countEl.className = "heading-count";
+    countEl.textContent = count;
+
+    row.appendChild(stamp);
+    row.appendChild(labelEl);
+    row.appendChild(countEl);
+
+    if (sectionValue) {
+      const removeBtn = document.createElement("span");
+      removeBtn.className = "heading-remove";
+      removeBtn.textContent = "×";
+      removeBtn.setAttribute("role", "button");
+      removeBtn.setAttribute("aria-label", `Remove heading ${label}`);
+      removeBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        removeSection(sectionValue);
+      });
+      row.appendChild(removeBtn);
+    }
+
+    row.addEventListener("click", () => {
+      activeSection = sectionValue;
+      renderSidebar();
+      renderEntries();
+    });
+
+    return row;
+  }
+
+  function removeSection(name) {
+    const ok = window.confirm(`Remove the heading "${name}"? Entries will keep their other tags.`);
+    if (!ok) return;
+
+    state.sections = state.sections.filter((s) => s !== name);
+    state.notes.forEach((n) => {
+      n.tags = n.tags.filter((t) => t !== name);
+    });
+    if (activeSection === name) activeSection = null;
+    saveData();
+    renderAll();
+  }
+
+  newHeadingForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const name = newHeadingInput.value.trim();
+    if (!name) return;
+    const exists = state.sections.some((s) => s.toLowerCase() === name.toLowerCase());
+    if (exists) {
+      newHeadingInput.value = "";
+      return;
+    }
+    state.sections.push(name);
+    newHeadingInput.value = "";
+    saveData();
+    renderAll();
+  });
+
+  // ---------------- rendering: composer ----------------
+
+  function renderStampPicker() {
+    stampPicker.innerHTML = "";
+
+    if (state.sections.length === 0) {
+      const hint = document.createElement("p");
+      hint.className = "picker-empty";
+      hint.textContent = "Add a heading in the sidebar to start tagging entries.";
+      stampPicker.appendChild(hint);
+      return;
+    }
+
+    state.sections.forEach((section) => {
+      const chip = document.createElement("button");
+      chip.type = "button";
+      chip.className = "picker-chip" + (pickerSelected.has(section) ? " selected" : "");
+
+      const stamp = document.createElement("span");
+      stamp.className = "stamp small" + (pickerSelected.has(section) ? " filled" : "");
+      stamp.textContent = section.charAt(0).toUpperCase();
+
+      const label = document.createElement("span");
+      label.textContent = section;
+
+      chip.appendChild(stamp);
+      chip.appendChild(label);
+
+      chip.addEventListener("click", () => {
+        if (pickerSelected.has(section)) pickerSelected.delete(section);
+        else pickerSelected.add(section);
+        renderStampPicker();
+      });
+
+      stampPicker.appendChild(chip);
+    });
+  }
+
+  function openComposer(note) {
+    composer.hidden = false;
+    if (note) {
+      editingId = note.id;
+      composerTitle.textContent = "Editing entry";
+      composerText.value = note.content;
+      pickerSelected = new Set(note.tags);
+    } else {
+      editingId = null;
+      composerTitle.textContent = "New entry";
+      composerText.value = "";
+      pickerSelected = new Set(activeSection ? [activeSection] : []);
+    }
+    renderStampPicker();
+    composerText.focus();
+    composer.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
+
+  function closeComposer() {
+    composer.hidden = true;
+    editingId = null;
+    composerText.value = "";
+    pickerSelected = new Set();
+  }
+
+  newEntryBtn.addEventListener("click", () => openComposer(null));
+  cancelEntryBtn.addEventListener("click", closeComposer);
+
+  saveEntryBtn.addEventListener("click", () => {
+    const content = composerText.value.trim();
+    if (!content) {
+      composerText.focus();
+      return;
+    }
+    const tags = Array.from(pickerSelected);
+    const now = new Date().toISOString();
+
+    if (editingId) {
+      const note = state.notes.find((n) => n.id === editingId);
+      if (note) {
+        note.content = content;
+        note.tags = tags;
+        note.updatedAt = now;
+      }
+    } else {
+      state.notes.push({
+        id: generateId(),
+        content,
+        tags,
+        createdAt: now,
+        updatedAt: now
+      });
+    }
+
+    saveData();
+    closeComposer();
+    renderAll();
+  });
+
+  // ---------------- rendering: entries ----------------
+
+  function renderEntries() {
+    entriesEl.innerHTML = "";
+    const notes = filteredNotes();
+
+    if (notes.length === 0) {
+      const empty = document.createElement("p");
+      empty.className = "empty-state";
+      if (searchTerm.trim()) {
+        empty.textContent = `No entries match "${searchTerm.trim()}".`;
+      } else if (activeSection) {
+        empty.textContent = `No entries under "${activeSection}" yet.`;
+      } else if (state.notes.length === 0) {
+        empty.textContent = "Nothing indexed yet. Write your first entry above.";
+      } else {
+        empty.textContent = "No entries to show.";
+      }
+      entriesEl.appendChild(empty);
+      return;
+    }
+
+    notes.forEach((note) => entriesEl.appendChild(renderEntryCard(note)));
+  }
+
+  function renderEntryCard(note) {
+    const card = document.createElement("article");
+    card.className = "entry-card";
+
+    const content = document.createElement("p");
+    const isExpanded = expandedIds.has(note.id);
+    const isLong = note.content.length > 480;
+    content.className = "entry-content" + (isLong && !isExpanded ? " clamped" : "");
+    content.textContent = note.content;
+    card.appendChild(content);
+
+    if (isLong) {
+      const toggle = document.createElement("button");
+      toggle.type = "button";
+      toggle.className = "expand-toggle";
+      toggle.textContent = isExpanded ? "show less" : "read more";
+      toggle.addEventListener("click", () => {
+        if (isExpanded) expandedIds.delete(note.id);
+        else expandedIds.add(note.id);
+        renderEntries();
+      });
+      card.appendChild(toggle);
+    }
+
+    const footer = document.createElement("div");
+    footer.className = "entry-footer";
+
+    const stampsWrap = document.createElement("div");
+    stampsWrap.className = "entry-stamps";
+    note.tags.forEach((tag) => {
+      const stamp = document.createElement("span");
+      stamp.className = "stamp small filled";
+      stamp.title = tag;
+      stamp.textContent = tag.charAt(0).toUpperCase();
+      stampsWrap.appendChild(stamp);
+    });
+    footer.appendChild(stampsWrap);
+
+    const meta = document.createElement("div");
+    meta.className = "entry-meta";
+
+    const date = document.createElement("span");
+    date.textContent = formatDate(note.updatedAt);
+    meta.appendChild(date);
+
+    const editBtn = document.createElement("button");
+    editBtn.className = "entry-action";
+    editBtn.type = "button";
+    editBtn.textContent = "edit";
+    editBtn.addEventListener("click", () => openComposer(note));
+    meta.appendChild(editBtn);
+
+    const deleteBtn = document.createElement("button");
+    deleteBtn.className = "entry-action";
+    deleteBtn.type = "button";
+    deleteBtn.textContent = "delete";
+    deleteBtn.addEventListener("click", () => deleteNote(note.id));
+    meta.appendChild(deleteBtn);
+
+    footer.appendChild(meta);
+    card.appendChild(footer);
+
+    return card;
+  }
+
+  function deleteNote(id) {
+    const ok = window.confirm("Delete this entry? This can't be undone.");
+    if (!ok) return;
+    state.notes = state.notes.filter((n) => n.id !== id);
+    saveData();
+    renderAll();
+  }
+
+  // ---------------- search ----------------
+
+  let searchDebounce;
+  searchInput.addEventListener("input", (e) => {
+    clearTimeout(searchDebounce);
+    searchDebounce = setTimeout(() => {
+      searchTerm = e.target.value;
+      renderEntries();
+    }, 120);
+  });
+
+  // ---------------- init ----------------
+
+  function renderAll() {
+    renderSidebar();
+    renderEntries();
+  }
+
+  loadData();
+})();
+</script>
+</body>
+</html>
